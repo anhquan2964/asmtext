@@ -1,0 +1,46 @@
+<%- include('../layouts/header'); %>
+
+<div class="container">
+    <h1 class="text-center">Dữ liệu từ MySQL</h1>
+    <div id="data-table" class="table-responsive">
+        <table  class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date Time</th>
+                    <th>Time</th>
+                    <th>Trans No</th>
+                    <th>Credit</th>
+                    <th>Debit</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody id="data-body">
+                <% results.forEach((item)=>{ %>
+                    <tr>
+                        <td ><%= item.id %></td>
+                        <td><%= item.date_time %></td>
+                        <td><%= item.time %></td>
+                        <td><%= item.trans_no %></td>
+                        <td><%= item.credit %></td>
+                        <td><%= item.debit %></td>
+                        <td><%= item.detail %></td>
+                        
+                    </tr>
+                    <% }) %>
+                <!-- Dữ liệu sẽ được tải và hiển thị tại đây -->
+            </tbody>
+        </table>
+    </div>
+
+    
+    <div class="d-flex justify-content-between">
+        <a href="/data?limit=<%= limit %>&offset=<%= (currentPage - 2) * limit %>" class="btn btn-primary" <% if (currentPage === 1) { %> style="display: none;" <% } %>>Trang trước</a>
+        <a href="/data?limit=<%= limit %>&offset=<%= currentPage * limit %>" class="btn btn-primary" <% if (currentPage === totalPages) { %> style="display: none;" <% } %>>Trang sau</a>
+    </div>
+    
+</div>
+
+<%- include('../layouts/footer'); %>
+</body>
+</html>

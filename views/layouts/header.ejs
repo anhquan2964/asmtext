@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tải lên tệp CSV</title>
+
+    <link rel="stylesheet" href="../style/style.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      .banner {
+        position: relative;
+        height: 50vh;
+      }
+      .banner-filecsv {
+        display: flex;
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
+        height: 50vh;
+        border: 1px solid black;
+      }
+      .banner-image img {
+        width: 100%;
+        position: absolute;
+        z-index: -1;
+      }
+      .banner-filecsv h1 {
+        margin-right: 30px;
+      }
+      /* HTML: <div class="loader"></div> */
+      .loadingd {
+        width: 40px;
+        height: 40px;
+        --c: no-repeat linear-gradient(orange 0 0);
+        background: var(--c), var(--c), var(--c), var(--c);
+        background-size: 21px 21px;
+        animation: l5 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
+      }
+      @keyframes l5 {
+        0% {
+          background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+        }
+        33% {
+          background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+          width: 60px;
+          height: 60px;
+        }
+        66% {
+          background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+          width: 60px;
+          height: 60px;
+        }
+        100% {
+          background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header
+        class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom bg-dark"
+      >
+        <a
+          href="/"
+          class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none"
+        >
+          <svg class="bi me-2" width="40" height="32">
+            <use xlink:href="#bootstrap"></use>
+          </svg>
+          <span class="fs-4">Simple header</span>
+        </a>
+
+        <ul class="nav nav-pills">
+          <li class="nav-item">
+            <a href="#" class="nav-link active" aria-current="page">Home</a>
+          </li>
+          <li class="nav-item"><a href="/data" class="nav-link">Features</a></li>
+          <li class="nav-item"><a href="#" class="nav-link">Pricing</a></li>
+          <li class="nav-item"><a href="#" class="nav-link">FAQs</a></li>
+          <li class="nav-item"><a href="#" class="nav-link">About</a></li>
+        </ul>
+      </header>
+    </div>
+  </body>
+</html>

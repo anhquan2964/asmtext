@@ -1,0 +1,110 @@
+<%- include('../layouts/header'); %>
+</div>
+<div class="container">
+    <div class="banner">
+        <div class="banner-image">
+            <img
+                src="https://media.istockphoto.com/id/1296324320/vi/anh/k%E1%BA%BFt-c%E1%BA%A5u-kim-lo%E1%BA%A1i-s%C3%A1ng-b%C3%B3ng-v%C3%A0ng.jpg?s=1024x1024&w=is&k=20&c=K6P3h5dnyF2RPuRSB46x22w3kbboDbSOBqkQwpXoB0M="
+                alt="" style="height: 50vh;"
+            />
+        </div>
+        <div id="loading" style="display: none">
+            <div class="loading"></div>
+            <p>Đang tải dữ liệu, vui lòng chờ...</p>
+        </div>
+
+        <div class="banner-filecsv">
+            <h1>Tải lên tệp CSV</h1>
+            <form id="uploadForm" action="/uploads" method="post" enctype="multipart/form-data">
+                <label for="">
+                    <input
+                        type="file"
+                        name="file"
+                        accept=".csv"
+                        class="form-control"
+                        required
+                    />
+                </label>
+                <button type="submit" class="btn btn-secondary active">
+                    Tải lên
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Lọc Giao Dịch</h2>
+
+    <!-- Form Lọc -->
+    <form action="/filter" method="GET">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="start-date" class="form-label">Ngày Bắt Đầu</label>
+                <input type="date" id="start-date" name="start_date" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <label for="end-date" class="form-label">Ngày Kết Thúc</label>
+                <input type="date" id="end-date" name="end_date" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <label for="transaction-amount" class="form-label">Số Tiền Giao Dịch</label>
+                <input type="number" step="0.01" id="transaction-amount" name="transaction_amount" class="form-control" placeholder="Nhập số tiền">
+            </div>
+
+            <div class="col-md-4">
+                <label for="transaction-memo" class="form-label">Nội Dung Chuyển Khoản</label>
+                <input type="text" id="transaction-memo" name="transaction_memo" class="form-control" placeholder="Nhập nội dung chuyển khoản">
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="submit" class="btn btn-primary">Lọc</button>
+            <button type="reset" class="btn btn-secondary">Đặt lại</button>
+        </div>
+    </form>
+
+<!-- Khu vực hiển thị kết quả -->
+<!-- Khu vực hiển thị kết quả -->
+<h2 class="text-center mb-4">Bảng Giao Dịch</h2>
+
+<!-- Bảng hiển thị dữ liệu -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Date Time</th>
+            <th>Time</th>
+            <th>Credit</th>
+            <th>Detail</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (typeof dataResults !== 'undefined' && Array.isArray(dataResults) && dataResults.length > 0) { %>
+            <% dataResults.forEach(function(data) { %>
+                <tr>
+                    <td><%= data.id %></td>
+                    <td><%= data.date_time %></td>
+                    <td><%= data.time %></td>
+                    <td><%= data.credit %></td>
+                    <td><%= data.detail %></td>
+                </tr>
+            <% }); %>
+        <% } else { %>
+            <tr>
+                <td colspan="6" class="text-center">Chưa có dữ liệu. Vui lòng nhấn "Lọc" để hiển thị kết quả.</td>
+            </tr>
+        <% } %>
+    </tbody>
+</table>
+
+
+
+
+
+</div>
+
+<%- include('../layouts/footer'); %>
