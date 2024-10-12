@@ -143,43 +143,20 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
     });
 });
 
-// Route thống kê tổng số tiền nhận được theo ngày hoặc theo khoảng thời gian
-// Route tìm kiếm giao dịch theo nội dung hoặc số tiền
-// app.get('/statistics', async (req, res) => {
-//     const { start_date, end_date } = req.query;
-
-//     try {
-//         // Kiểm tra nếu người dùng không nhập ngày
-//         if (!start_date || !end_date) {
-//             return res.status(400).send('Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc.');
-//         }
-
-//         // Truy vấn tổng số tiền nhận được (credit) theo khoảng thời gian
-//         const query = `
-//             SELECT DATE(date_time) AS date, SUM(credit) AS total_credit
-//             FROM datas
-//             WHERE date_time BETWEEN ? AND ?
-//             GROUP BY DATE(date_time)
-//             ORDER BY DATE(date_time) ASC
-//         `;
-//         const [results] = await pool.query(query, [start_date, end_date]);
-
-//         // Hiển thị kết quả
-//         res.render('products/statistics', { results, start_date, end_date });
-//     } catch (err) {
-//         console.error('Lỗi khi truy vấn thống kê:', err);
-//         res.status(500).send('Có lỗi xảy ra trong quá trình thống kê.');
-//     }
-// });
-
 app.get('/filter', async (req, res) => {
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, page } = req.query;
+    const limit = 1000; // Số bản ghi tối đa mỗi trang
+    const offset = (parseInt(page) - 1) * limit || 0; // Tính toán offset cho phân trang
 
-    // Nếu không có ngày được truyền, trả về trang index ban đầu với mảng dataResults rỗng.
+    // Kiểm tra xem ngày bắt đầu và ngày kết thúc có hợp lệ không
     if (!start_date || !end_date) {
         return res.render('products/index', { 
             totalCredit: 0, 
-            dataResults: [] // Truyền mảng rỗng nếu không có dữ liệu
+            dataResults: [], // Truyền mảng rỗng nếu không có dữ liệu
+            currentPage: 1, // Đặt currentPage mặc định là 1
+            totalPages: 1, // Đặt totalPages mặc định là 1
+            start_date: '', // Không truyền lại start_date
+            end_date: '' // Không truyền lại end_date
         });
     }
 
@@ -194,24 +171,37 @@ app.get('/filter', async (req, res) => {
     const queryData = `
         SELECT id, date_time, trans_no, credit, debit, detail 
         FROM datas 
-        WHERE date_time >= ? AND date_time <= ?`;
+        WHERE date_time >= ? AND date_time <= ?
+        LIMIT ? OFFSET ?`;
 
     try {
         const [creditResults] = await pool.query(queryTotalCredit, [startDateFormatted, endDateFormatted]);
         const totalCredit = creditResults[0].totalCredit || 0;
 
-        const [dataResults] = await pool.query(queryData, [startDateFormatted, endDateFormatted]);
+        const [dataResults] = await pool.query(queryData, [startDateFormatted, endDateFormatted, limit, offset]);
 
-        // Luôn truyền dữ liệu cho view
+        const [totalResults] = await pool.query(`
+            SELECT COUNT(*) as total FROM datas WHERE date_time >= ? AND date_time <= ?`, 
+            [startDateFormatted, endDateFormatted]
+        );
+        const totalRecords = totalResults[0].total;
+        const totalPages = Math.ceil(totalRecords / limit);
+        const currentPage = parseInt(page) || 1; // Trang hiện tại
+
         res.render('products/index', { 
             totalCredit, 
-            dataResults: dataResults || [] // Truyền mảng rỗng nếu không có kết quả
+            dataResults: dataResults || [], // Truyền mảng rỗng nếu không có kết quả
+            currentPage, // Trang hiện tại
+            totalPages, // Tổng số trang
+            start_date, // Truyền lại start_date
+            end_date // Truyền lại end_date
         });
     } catch (error) {
         console.error('Lỗi khi lấy dữ liệu:', error);
         res.status(500).send('Có lỗi xảy ra.');
     }
 });
+
 
 
 // Trang chính
