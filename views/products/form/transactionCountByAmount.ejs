@@ -1,0 +1,69 @@
+<form id="transactionCountForm" action="/filter/transactionCountByAmount" method="GET">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="min-amount" class="form-label">Số Tiền Tối Thiểu</label>
+            <input type="number" id="min-amount" name="min_amount" class="form-control" required>
+        </div>
+
+        <div class="col-md-4">
+            <label for="max-amount" class="form-label">Số Tiền Tối Đa</label>
+            <input type="number" id="max-amount" name="max_amount" class="form-control" required>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button type="submit" class="btn btn-primary">Thống Kê</button>
+        <button type="reset" class="btn btn-secondary">Đặt lại</button>
+    </div>
+</form>
+
+<!-- Kết quả thống kê giao dịch -->
+<div id="transactionCountResult">
+    <% if (typeof transactionCount !== 'undefined') { %>
+        <div class="alert alert-success text-center">
+            <p class="font-weight-bold">
+                Số lượng giao dịch với số tiền từ 
+                <strong><%= min_amount %></strong> đến 
+                <strong><%= max_amount %></strong>: 
+                <strong><%= transactionCount %></strong>
+            </p>
+        </div>
+        
+        <% if (transactionResults.length > 0) { %>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ngày Tháng</th>
+                        <th>Chi Tiết</th>
+                        <th>Số Tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% transactionResults.forEach(transaction => { %>
+                        <tr>
+                            <td><%= transaction.id %></td>
+                            <td><%= transaction.date_time %></td>
+                            <td><%= transaction.detail %></td>
+                            <td><%= transaction.credit %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <!-- Điều hướng phân trang với nút "Trang trước" và "Trang sau" -->
+            <div class="d-flex justify-content-between">
+                <% if (currentPage > 1) { %>
+                    <a class="btn btn-secondary" href="/filter/transactionCountByAmount?min_amount=<%= min_amount %>&max_amount=<%= max_amount %>&page=<%= currentPage - 1 %>">Trang trước</a>
+                <% } %>
+                <% if (currentPage < totalPages) { %>
+                    <a class="btn btn-secondary" href="/filter/transactionCountByAmount?min_amount=<%= min_amount %>&max_amount=<%= max_amount %>&page=<%= currentPage + 1 %>">Trang sau</a>
+                <% } %>
+            </div>
+        <% } %>
+    <% } else { %>
+        <div class="alert alert-warning text-center">
+            <p>Không có dữ liệu. Vui lòng nhập khoảng tiền hợp lệ và nhấn "Thống Kê".</p>
+        </div>
+    <% } %>
+</div>

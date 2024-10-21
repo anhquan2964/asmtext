@@ -1,0 +1,49 @@
+<form id="totalAmountForm" action="/filter/totalAmountByDay" method="GET">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="start-date" class="form-label">Ngày Bắt Đầu</label>
+            <input type="date" id="totalStartDate" name="start_date" class="form-control" required>
+        </div>
+
+        <div class="col-md-4">
+            <label for="end-date" class="form-label">Ngày Kết Thúc</label>
+            <input type="date" id="totalEndDate" name="end_date" class="form-control" required>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button type="submit" class="btn btn-primary">Thống Kê</button>
+        <button type="reset" class="btn btn-secondary">Đặt lại</button>
+    </div>
+</form>
+
+<div id="totalAmountResult">
+    <!-- Hiển thị thời gian xử lý -->
+    <% if (typeof processingTime !== 'undefined' && processingTime !== null) { %>
+        <p>Thời gian xử lý: <%= processingTime %> ms</p>
+    <% } %>
+
+    <!-- Bảng hiển thị tổng số tiền nhận -->
+    <table class="table table-bordered table-striped table-hover text-center mt-4">
+        <thead class="table-dark">
+            <tr>
+                <th>Ngày</th>
+                <th>Tổng Số Tiền Nhận</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (typeof results !== 'undefined' && results.length > 0) { %>
+                <% results.forEach(function(data) { %>
+                    <tr>
+                        <td><%= data.date_time %></td>
+                        <td><%= data.totalCredit %></td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="2" class="text-center">Chưa có dữ liệu. Vui lòng nhấn "Lọc" để hiển thị kết quả.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,82 @@
+<form id="filterForm" action="/filter" method="GET">
+  <input type="hidden" id="selectedFunction" name="function" value="" />
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <label for="start-date" class="form-label">Ngày Bắt Đầu</label>
+      <input
+        type="date"
+        id="start-date"
+        name="start_date"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="col-md-4">
+      <label for="end-date" class="form-label">Ngày Kết Thúc</label>
+      <input
+        type="date"
+        id="end-date"
+        name="end_date"
+        class="form-control"
+        required
+      />
+    </div>
+  </div>
+
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <button type="submit" class="btn btn-primary">Lọc</button>
+    <button type="reset" class="btn btn-secondary">Đặt lại</button>
+  </div>
+</form>
+
+<h2 class="text-center mb-4">Bảng Giao Dịch</h2>
+
+<table class="table table-bordered">
+  <% if (typeof processingTime !== 'undefined' && processingTime !== null) { %>
+  <p>Thời gian xử lý: <%= processingTime %> ms</p>
+  <% } %>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Date Time</th>
+      <th>Credit</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (typeof dataResults !== 'undefined' && dataResults.length > 0) { %> <%
+    dataResults.forEach(function(data) { %>
+    <tr>
+      <td><%= data.id %></td>
+      <td><%= data.date_time %></td>
+      <td><%= data.credit %></td>
+      <td><%= data.detail %></td>
+    </tr>
+    <% }); %> <% } else { %>
+    <tr>
+      <td colspan="5" class="text-center">
+        Chưa có dữ liệu. Vui lòng nhấn "Lọc" để hiển thị kết quả.
+      </td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>
+<!-- Phân trang -->
+<% if (typeof dataResults !== 'undefined' && dataResults.length > 0) { %>
+<div class="d-flex justify-content-between">
+  <% if (currentPage > 1) { %>
+  <a
+    href="/filter?start_date=<%= start_date %>&end_date=<%= end_date %>&page=<%= currentPage - 1 %>"
+    class="btn btn-primary"
+    >Trang Trước</a
+  >
+  <% } %> <% if (currentPage < totalPages) { %>
+  <a
+    href="/filter?start_date=<%= start_date %>&end_date=<%= end_date %>&page=<%= currentPage + 1 %>"
+    class="btn btn-primary"
+    >Trang Sau</a
+  >
+  <% } %>
+</div>
+<% } %>

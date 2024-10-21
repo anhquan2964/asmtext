@@ -10,31 +10,31 @@ const app = express();
 app.set('view engine', 'ejs');
 
 const upload = multer({ dest: 'uploads/' });
+let pool;
 
-// Cấu hình pool kết nối MySQL
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'data' // Bạn có thể chỉ định cơ sở dữ liệu ở đây
-});
-
-// Kết nối và tạo bảng nếu chưa tồn tại
-const createDatabaseAndTable = async () => {
+// Hàm khởi tạo cơ sở dữ liệu
+const initializeDatabase = async () => {
     try {
+        // Kết nối đến MySQL mà không chỉ định cơ sở dữ liệu
+        const connection = await mysql.createConnection({
+            host: 'localhost',
+            user: 'root',
+            password: ''
+        });
+
         // Tạo cơ sở dữ liệu nếu chưa tồn tại
-        await pool.query('CREATE DATABASE IF NOT EXISTS data');
+        await connection.query('CREATE DATABASE IF NOT EXISTS data');
         console.log('Cơ sở dữ liệu "data" đã được tạo hoặc đã tồn tại.');
 
-        // Kết nối lại với cơ sở dữ liệu mới tạo
-        const dbConnection = await mysql.createConnection({
+        // Kết nối lại với cơ sở dữ liệu "data"
+        pool = mysql.createPool({
             host: 'localhost',
             user: 'root',
             password: '',
-            database: 'data' // Kết nối đến cơ sở dữ liệu vừa tạo
+            database: 'data' // Kết nối đến cơ sở dữ liệu "data"
         });
 
-        // Tạo bảng 
+        // Tạo bảng nếu chưa tồn tại
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS datas (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -46,19 +46,17 @@ const createDatabaseAndTable = async () => {
                 detail TEXT
             )
         `;
-        await dbConnection.query(createTableQuery);
-        console.log('Bảng đã được tạo');
+        await pool.query(createTableQuery);
+        console.log('Bảng "datas" đã được tạo');
 
-        // Đóng kết nối
-        await dbConnection.end();
     } catch (err) {
-        console.error('Lỗi tạo cơ sở dữ liệu hoặc bảng:', err);
+        console.error('Lỗi khi kết nối hoặc tạo cơ sở dữ liệu:', err);
+        process.exit(1); // Dừng ứng dụng nếu có lỗi
     }
 };
 
-// Gọi hàm tạo cơ sở dữ liệu và bảng
-createDatabaseAndTable();
-
+// Gọi hàm khởi tạo cơ sở dữ liệu
+initializeDatabase();
 // Hàm phân tích và chuyển đổi thời gian
 function parseAndConvertTime(str) {
     const parts = str.split("_");
@@ -110,6 +108,8 @@ const insertData = async (data) => {
 
 // Tải lên tệp CSV
 app.post('/uploads', upload.single('file'), async (req, res) => {
+    const startTime = new Date(); // Bắt đầu đo thời gian
+
     if (!req.file) {
         return res.status(400).send('Vui lòng tải lên một tệp CSV.');
     }
@@ -125,7 +125,11 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
             if (results.data.length > 0) {
                 try {
                     await insertData(results.data); // Chèn dữ liệu vào MySQL
-                    res.send('Tệp CSV đã được xử lý và dữ liệu đã được chèn vào MySQL.'); // Thông báo cho người dùng
+
+                    const endTime = new Date(); // Kết thúc đo thời gian
+                    const processingTime = endTime - startTime; // Tính toán thời gian xử lý
+                    res.redirect('/'); // Thông báo cho người dùng
+                    
                 } catch (error) {
                     console.error('Có lỗi xảy ra trong quá trình chèn dữ liệu:', error);
                     res.status(500).send('Có lỗi xảy ra trong quá trình chèn dữ liệu.');
@@ -144,65 +148,169 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
 });
 
 app.get('/filter', async (req, res) => {
-    const { start_date, end_date, page } = req.query;
-    const limit = 1000; // Số bản ghi tối đa mỗi trang
-    const offset = (parseInt(page) - 1) * limit || 0; // Tính toán offset cho phân trang
+    const startTime = new Date(); // Bắt đầu đo thời gian
+    const { start_date, end_date, function: selectedFunction = 'transactionTable', page } = req.query;
 
-    // Kiểm tra xem ngày bắt đầu và ngày kết thúc có hợp lệ không
+    // Kiểm tra start_date và end_date
     if (!start_date || !end_date) {
         return res.render('products/index', { 
-            totalCredit: 0, 
-            dataResults: [], // Truyền mảng rỗng nếu không có dữ liệu
-            currentPage: 1, // Đặt currentPage mặc định là 1
-            totalPages: 1, // Đặt totalPages mặc định là 1
-            start_date: '', // Không truyền lại start_date
-            end_date: '' // Không truyền lại end_date
+            dataResults: [], 
+            start_date: '', 
+            end_date: '',
+            currentPage: 1,
+            totalPages: 0,
+            processingTime: null
         });
+    }
+
+
+    const startDateFormatted = start_date.split("-").reverse().join("-");
+    const endDateFormatted = end_date.split("-").reverse().join("-");
+
+    const limit = 100;
+    const currentPage = page ? parseInt(page) : 1; 
+    const offset = (currentPage - 1) * limit;
+
+    try {
+        let dataResults = [];
+
+        if (selectedFunction === 'transactionTable') {
+            console.log('Chức năng được chọn: transactionTable');
+
+            // Truy vấn dữ liệu với LIMIT và OFFSET
+            const queryData = `
+                SELECT id, date_time, trans_no, credit, debit, detail 
+                FROM datas 
+                WHERE date_time >= ? AND date_time <= ?
+                LIMIT ? OFFSET ?`;
+
+            const [resultData] = await pool.query(queryData, [startDateFormatted, endDateFormatted, limit, offset]);
+            dataResults = resultData || [];
+
+            // Kiểm tra nếu không có dữ liệu trả về
+            if (dataResults.length === 0) {
+                console.log("Không có dữ liệu phù hợp.");
+            }
+
+            // Truy vấn để lấy tổng số bản ghi
+            const [totalRowsResult] = await pool.query('SELECT COUNT(*) AS total FROM datas WHERE date_time >= ? AND date_time <= ?', [startDateFormatted, endDateFormatted]);
+            const totalRows = totalRowsResult[0].total;
+
+            // Tính toán tổng số trang
+            const totalPages = Math.ceil(totalRows / limit);
+
+            const endTime = new Date(); // Kết thúc đo thời gian
+            const processingTime = endTime - startTime; // Tính toán thời gian xử lý
+
+            return res.render('products/index', { 
+                dataResults,
+                start_date,
+                end_date,
+                currentPage,
+                totalPages,
+                processingTime: `${processingTime} ms`
+            });
+        } else {
+            console.log('Giá trị function không hợp lệ:', selectedFunction);
+            return res.status(400).send('Chức năng không hợp lệ.');
+        }
+
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu:', error);
+        return res.status(500).send('Có lỗi xảy ra trong quá trình lấy dữ liệu.');
+    }
+});
+
+app.get('/filter/totalAmountByDay', async (req, res) => {
+    const startTime = new Date(); // Bắt đầu đo thời gian
+
+    const { start_date, end_date } = req.query;
+    if (!start_date || !end_date) {
+        return res.status(400).send('Cần cung cấp start_date và end_date.');
     }
 
     const startDateFormatted = start_date.split("-").reverse().join("-");
     const endDateFormatted = end_date.split("-").reverse().join("-");
 
-    const queryTotalCredit = `
-        SELECT SUM(COALESCE(credit, 0)) AS totalCredit 
-        FROM datas 
-        WHERE date_time >= ? AND date_time <= ?`;
-
-    const queryData = `
-        SELECT id, date_time, trans_no, credit, debit, detail 
-        FROM datas 
+    const query = `
+        SELECT date_time, SUM(COALESCE(credit, 0)) AS totalCredit
+        FROM datas
         WHERE date_time >= ? AND date_time <= ?
+        GROUP BY date_time
+    `;
+
+    try {
+        const [results] = await pool.query(query, [startDateFormatted, endDateFormatted]);
+
+        const endTime = new Date(); // Kết thúc đo thời gian
+        const processingTime = endTime - startTime; // Tính toán thời gian xử lý
+
+        res.render('products/index', { 
+            results, 
+            processingTime: `${processingTime} ms` // Hiển thị thời gian xử lý
+        });
+    } catch (error) {
+        console.error('Lỗi khi thống kê tổng số tiền:', error);
+        res.status(500).send('Có lỗi xảy ra trong quá trình thống kê.');
+    }
+});
+
+app.get('/filter/transactionCountByAmount', async (req, res) => {
+    const startTime = new Date(); // Bắt đầu đo thời gian
+
+    const { min_amount, max_amount, page = 1 } = req.query; // Thêm tham số page
+    const limit = 10; // Số lượng kết quả trên mỗi trang
+    const currentPage = parseInt(page); // Trang hiện tại
+    const offset = (currentPage - 1) * limit; // Tính toán offset
+
+    if (!min_amount || !max_amount) {
+        return res.render('products/index', { 
+            transactionCount: 0,
+            totalTransactions: 0,
+            currentPage: 1,
+            totalPages: 0,
+            min_amount,
+            max_amount
+        });
+    }
+
+    const queryCount = `
+        SELECT COUNT(*) AS count 
+        FROM datas 
+        WHERE credit BETWEEN ? AND ?`;
+
+    const queryTransactions = `
+        SELECT * 
+        FROM datas 
+        WHERE credit BETWEEN ? AND ?
         LIMIT ? OFFSET ?`;
 
     try {
-        const [creditResults] = await pool.query(queryTotalCredit, [startDateFormatted, endDateFormatted]);
-        const totalCredit = creditResults[0].totalCredit || 0;
+        const [countResults] = await pool.query(queryCount, [min_amount, max_amount]);
+        const transactionCount = countResults[0].count || 0;
 
-        const [dataResults] = await pool.query(queryData, [startDateFormatted, endDateFormatted, limit, offset]);
+        const [transactionResults] = await pool.query(queryTransactions, [min_amount, max_amount, limit, offset]);
 
-        const [totalResults] = await pool.query(`
-            SELECT COUNT(*) as total FROM datas WHERE date_time >= ? AND date_time <= ?`, 
-            [startDateFormatted, endDateFormatted]
-        );
-        const totalRecords = totalResults[0].total;
-        const totalPages = Math.ceil(totalRecords / limit);
-        const currentPage = parseInt(page) || 1; // Trang hiện tại
+        const endTime = new Date(); // Kết thúc đo thời gian
+        const processingTime = endTime - startTime; // Tính toán thời gian xử lý
+
+        const totalPages = Math.ceil(transactionCount / limit); // Tổng số trang
 
         res.render('products/index', { 
-            totalCredit, 
-            dataResults: dataResults || [], // Truyền mảng rỗng nếu không có kết quả
-            currentPage, // Trang hiện tại
-            totalPages, // Tổng số trang
-            start_date, // Truyền lại start_date
-            end_date // Truyền lại end_date
+            transactionResults, // Truyền kết quả giao dịch đến view
+            transactionCount,
+            totalTransactions: transactionCount,
+            currentPage,
+            totalPages,
+            min_amount,
+            max_amount,
+            processingTime: `${processingTime} ms` // Hiển thị thời gian xử lý
         });
     } catch (error) {
         console.error('Lỗi khi lấy dữ liệu:', error);
         res.status(500).send('Có lỗi xảy ra.');
     }
 });
-
-
 
 // Trang chính
 app.get('/', (req, res) => {

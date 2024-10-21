@@ -1,94 +1,61 @@
 <%- include('../layouts/header'); %>
 
 <div class="container mt-5">
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Lọc Giao Dịch</h2>
-    
-        <!-- Select Dropdown để chọn chức năng -->
-        <div class="mb-4">
-            <label for="functionSelect" class="form-label">Chọn Chức Năng</label>
-            <select id="functionSelect" class="form-select" name="function" required>
-                <option value="" selected disabled>Chọn chức năng...</option>
-                <option value="transactionTable">Hiển thị Bảng Giao Dịch</option>
-                <option value="totalAmountByDay">Thống Kê Tổng Số Tiền Nhận Được Theo Ngày</option>
-                <option value="transactionCountByAmount">Thống Kê Số Lượng Giao Dịch Dựa Theo Số Tiền Chuyển Khoản</option>
-            </select>
-        </div>
-    
-        <!-- Form Lọc -->
-        <form id="filterForm" action="/filter" method="GET">
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="start-date" class="form-label">Ngày Bắt Đầu</label>
-                    <input type="date" id="start-date" name="start_date" class="form-control" required>
-                </div>
-    
-                <div class="col-md-4">
-                    <label for="end-date" class="form-label">Ngày Kết Thúc</label>
-                    <input type="date" id="end-date" name="end_date" class="form-control" required>
-                </div>
-    
-                <div class="col-md-4">
-                    <label for="transaction-amount" class="form-label">Số Tiền Giao Dịch</label>
-                    <input type="number" step="0.01" id="transaction-amount" name="transaction_amount" class="form-control" placeholder="Nhập số tiền">
-                </div>
-    
-                <div class="col-md-4">
-                    <label for="transaction-memo" class="form-label">Nội Dung Chuyển Khoản</label>
-                    <input type="text" id="transaction-memo" name="transaction_memo" class="form-control" placeholder="Nhập nội dung chuyển khoản">
-                </div>
-            </div>
-    
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <button type="submit" class="btn btn-primary">Lọc</button>
-                <button type="reset" class="btn btn-secondary">Đặt lại</button>
-            </div>
-        </form>
-    </div>
-    
-    <h2 class="text-center mb-4">Bảng Giao Dịch</h2>
+    <h2 class="text-center mb-4">Lọc Giao Dịch</h2>
 
-    <!-- Bảng hiển thị dữ liệu -->
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Date Time</th>
-                <th>Time</th>
-                <th>Credit</th>
-                <th>Detail</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% if (typeof dataResults !== 'undefined' && dataResults.length > 0) { %>
-                <% dataResults.forEach(function(data) { %>
-                    <tr>
-                        <td><%= data.id %></td>
-                        <td><%= data.date_time %></td>
-                        <td><%= data.time %></td>
-                        <td><%= data.credit %></td>
-                        <td><%= data.detail %></td>
-                    </tr>
-                <% }); %>
-            <% } else { %>
-                <tr>
-                    <td colspan="5" class="text-center">Chưa có dữ liệu. Vui lòng nhấn "Lọc" để hiển thị kết quả.</td>
-                </tr>
-            <% } %>
-        </tbody>
-    </table>
-    
-    <!-- Phân trang -->
-    <% if (typeof dataResults !== 'undefined' && dataResults.length > 0) { %>
-    <div class="d-flex justify-content-between">
-        <% if (currentPage > 1) { %>
-            <a href="/filter?start_date=<%= start_date %>&end_date=<%= end_date %>&page=<%= currentPage - 1 %>" class="btn btn-primary">Trang Trước</a>
-        <% } %>
-        <% if (currentPage < totalPages) { %>
-            <a href="/filter?start_date=<%= start_date %>&end_date=<%= end_date %>&page=<%= currentPage + 1 %>" class="btn btn-primary">Trang Sau</a>
-        <% } %>
+    <div class="mb-4">
+        <label for="functionSelect" class="form-label">Chọn Chức Năng</label>
+        <select id="functionSelect" class="form-select" name="function" required>
+            <option value="" selected disabled>Chọn chức năng...</option>
+            <option value="transactionTable">Hiển thị Bảng Giao Dịch</option>
+            <option value="totalAmountByDay">Thống Kê Tổng Số Tiền Nhận Được Theo Ngày</option>
+            <option value="transactionCountByAmount">Thống Kê Số Lượng Giao Dịch Dựa Theo Số Tiền Chuyển Khoản</option>
+        </select>
     </div>
-    <% } %>
 
+    <div id="filterFormContainer" style="display: none;">
+
+          <%- include('./form/filterForm'); %>
     </div>
+
+    <div id="totalAmountContainer" style="display: none;">
+        <%- include('./form/totalAmountByDay'); %>
+    </div>
+
+    <!-- Div để chứa thống kê số lượng giao dịch dựa theo số tiền -->
+    <div id="transactionCountContainer" style="display: none;">
+        <%- include('./form/transactionCountByAmount'); %>
+    </div>
+</div>
+
 <%- include('../layouts/footer'); %>
+
+<script>
+    const savedFunction = localStorage.getItem('selectedFunction');
+    if (savedFunction) {
+        document.getElementById('functionSelect').value = savedFunction;
+        document.getElementById('selectedFunction').value = savedFunction;
+        document.getElementById('filterFormContainer').style.display = savedFunction === 'transactionTable' ? 'block' : 'none';
+        document.getElementById('totalAmountContainer').style.display = savedFunction === 'totalAmountByDay' ? 'block' : 'none';
+        document.getElementById('transactionCountContainer').style.display = savedFunction === 'transactionCountByAmount' ? 'block' : 'none'; 
+    }
+
+    // Lắng nghe sự kiện khi người dùng thay đổi lựa chọn
+    document.getElementById('functionSelect').addEventListener('change', function () {
+        const selectedFunction = this.value;
+        const filterFormContainer = document.getElementById('filterFormContainer');
+        const totalAmountContainer = document.getElementById('totalAmountContainer');
+        const transactionCountContainer = document.getElementById('transactionCountContainer'); 
+
+        // Cập nhật giá trị của input hidden
+        document.getElementById('selectedFunction').value = selectedFunction;
+
+        // Hiển thị form tương ứng
+        filterFormContainer.style.display = selectedFunction === 'transactionTable' ? 'block' : 'none';
+        totalAmountContainer.style.display = selectedFunction === 'totalAmountByDay' ? 'block' : 'none';
+        transactionCountContainer.style.display = selectedFunction === 'transactionCountByAmount' ? 'block' : 'none'; 
+
+        // Lưu giá trị đã chọn vào localStorage
+        localStorage.setItem('selectedFunction', selectedFunction);
+    });
+</script>
